@@ -1,0 +1,271 @@
+new_11.yml
+
+---
+- hosts: tes
+  become_user: root
+  become: true
+  roles:
+  - rocky
+
+
+
+
+first.yml
+
+---
+
+- hosts: tes
+  become: yes
+
+  tasks:
+  - name: want to install httpd
+    action: yum name=maven state=absent
+  - name: want to install java
+    action: yum name=docker state=absent
+
+
+second.yml
+
+- hosts: tes
+  become: yes
+  vars:
+    pkgname: php
+  tasks:
+  - name: installating maven request
+    action: yum name='{{pkgname}}' state=present
+
+newthird.yml
+
+---
+
+- hosts: tes
+  become: yes
+  tasks:
+  - name: installing docker
+    action: yum name=docker state=installed
+    notify: restarted docker
+  handlers:
+  - name: restarted docker
+    action: service=podman status=restarted
+
+
+third.yml
+
+- hosts: tes
+  become: yes
+  tasks:
+    - name: Install Docker
+      yum:
+        name: docker
+        state: present
+      notify: restart docker
+
+  handlers:
+    - name: restart docker
+      service:
+        name: docker
+        state: restarted
+
+roles.yml
+
+---
+- hosts: tes
+  become_user: root
+  become: true
+
+  tasks:
+  - name: install httpd
+    yum: name=httpd update_cache=yes state=latest
+  - name: copy index.html file
+    copy: src=index.html dest=/var/www/html
+    notify:
+    - restart apache
+  - name: start and enable httpd service
+    service: name=httpd state=started enabled=yes
+  handlers:
+  - name: restart apache
+    service: name=httpd state=restarted
+
+
+roles2.yml
+
+- hosts: tes
+  become: true
+  tasks:
+    - name: Install Podman
+      yum:
+        name: podman
+        state: present
+    - name: Copy index.html file
+      copy:
+        src: index.html
+        dest: /var/www/html/
+      notify: restart podman
+    - name: Enable and start Podman service
+      systemd:
+        name: podman
+        enabled: yes
+        state: started
+  handlers:
+   - name: restart podman
+     systemd:
+       name: podman
+       state: restarted
+
+
+new.yml
+
+- hosts: tes
+  become: yes
+  tasks:
+    - name: Install Podman
+      yum:
+        name: podman
+        state: present
+
+    - name: Enable and start Podman service
+      systemd:
+        name: podman
+        enabled: yes
+        state: started
+
+  handlers:
+    - name: restart podman
+      systemd:
+        name: podman
+        state: restarted
+
+
+new_mvn.yml
+
+- hosts: tes
+  become: true
+  tasks:
+    - name: install maven
+      yum:
+        name: maven
+        state: present
+    - name: Install Podman
+      yum:
+        name: podman
+        state: present
+    - name: Copy index.html file
+      copy:
+        src: index.html
+        dest: /var/www/html/
+      notify: restart podman
+    - name: Enable and start Podman service
+      systemd:
+        name: podman
+        enabled: yes
+        state: started
+  handlers:
+   - name: restart podman
+     systemd:
+       name: podman
+       state: restarted
+
+
+
+ansible-galaxy init /etc/ansible/roles/rocky/
+
+
+
+
+[user@ip-172-31-40-249 /]$ cd /etc/ansible/roles/rocky/
+[user@ip-172-31-40-249 rocky]$ tree
+.
+├── defaults
+│   └── main.yml
+├── files
+│   └── index.html
+├── handlers
+│   └── main.yml
+├── meta
+│   └── main.yml
+├── README.md
+├── tasks
+│   ├── config.yml
+│   ├── install.yml
+│   ├── main.yml
+│   ├── mvn.yml
+│   └── service.yml
+├── templates
+├── tests
+│   ├── inventory
+│   └── test.yml
+└── vars
+    └── main.yml
+
+8 directories, 13 files
+[user@ip-172-31-40-249 rocky]$
+
+
+
+files/index.html
+this is in folders
+
+handlers/main.yml
+---
+   - name: restart podman
+     systemd:
+       name: podman
+       state: restarted
+
+
+tasks/config.yml
+
+- name: Copy index.html file
+  copy:
+    src: index.html
+    dest: /var/www/html/
+  notify: restart podman
+
+
+tasks/install.yml
+
+- name: Install Podman
+  yum:
+    name: podman
+    state: present
+
+tasks/mvn.yml
+
+- name: install maven
+  yum:
+    name: maven
+    state: present
+
+tasks/service.yml
+
+- name: Enable and start Podman service
+  systemd:
+    name: podman
+    enabled: yes
+    state: started
+
+tasks/main.yml
+
+---
+
+- import_tasks: install.yml
+- import_tasks: config.yml
+- import_tasks: service.yml
+- import_tasks: mvn.yml
+
+system generated:
+tests/inventory
+
+localhost
+
+system generated:
+testds/tests.yml
+
+---
+- hosts: localhost
+  remote_user: root
+  roles:
+    - /etc/ansible/roles/rocky
+
+
+
